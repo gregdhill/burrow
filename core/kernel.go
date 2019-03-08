@@ -55,6 +55,7 @@ import (
 	"github.com/hyperledger/burrow/rpc/rpctransact"
 	"github.com/hyperledger/burrow/txs"
 	"github.com/streadway/simpleuuid"
+	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmConfig "github.com/tendermint/tendermint/config"
 	dbm "github.com/tendermint/tendermint/libs/db"
 	"github.com/tendermint/tendermint/node"
@@ -92,9 +93,9 @@ func NewBurrowDB(dbDir string) dbm.DB {
 	return dbm.NewDB(BurrowDBName, dbm.GoLevelDBBackend, dbDir)
 }
 
-func NewKernel(ctx context.Context, keyClient keys.KeyClient, privValidator tmTypes.PrivValidator,
-	genesisDoc *genesis.GenesisDoc, tmConf *tmConfig.Config, rpcConfig *rpc.RPCConfig, keyConfig *keys.KeysConfig,
-	keyStore *keys.KeyStore, exeOptions []execution.ExecutionOption, authorizedPeersProvider abci.PeersFilterProvider, restore string, logger *logging.Logger) (*Kernel, error) {
+func NewKernel(ctx context.Context, keyClient keys.KeyClient, keyConfig *keys.KeysConfig, keyStore *keys.KeyStore, evmOnly bool,
+	privValidator tmTypes.PrivValidator, tmConf *tmConfig.Config, authorizedPeersProvider abci.PeersFilterProvider, genesisDoc *genesis.GenesisDoc,
+	rpcConfig *rpc.RPCConfig, exeOptions []execution.ExecutionOption, restore string, logger *logging.Logger) (*Kernel, error) {
 
 	var err error
 	kern := &Kernel{
@@ -190,9 +191,21 @@ func NewKernel(ctx context.Context, keyClient keys.KeyClient, privValidator tmTy
 		return nil, err
 	}
 
-	kern.Transactor = execution.NewTransactor(kern.Blockchain, kern.Emitter,
-		execution.NewAccounts(checker, keyClient, AccountsRingMutexCount),
-		kern.Node.MempoolReactor().Mempool.CheckTx, txCodec, kern.Logger)
+	if evmOnly {
+		checkTx := func(tx tmTypes.Tx, cb func(*abciTypes.Response)) error {
+			resp := abci.TxExecutor("CheckTx", committer, txCodec, logger.WithScope("CheckTx"))(tx)
+			cb(abciTypes.ToResponseCheckTx(resp))
+			return nil
+		}
+
+		kern.Transactor = execution.NewTransactor(kern.Blockchain, kern.Emitter,
+			execution.NewAccounts(checker, keyClient, AccountsRingMutexCount),
+			checkTx, txCodec, kern.Logger)
+	} else {
+		kern.Transactor = execution.NewTransactor(kern.Blockchain, kern.Emitter,
+			execution.NewAccounts(checker, keyClient, AccountsRingMutexCount),
+			kern.Node.MempoolReactor().Mempool.CheckTx, txCodec, kern.Logger)
+	}
 
 	nameRegState := kern.State
 	proposalRegState := kern.State

@@ -74,7 +74,6 @@ func (conf *BurrowConfig) Kernel(ctx context.Context, restoreDump string) (*core
 	if err != nil {
 		return nil, err
 	}
-	privValidator := tendermint.NewPrivValidatorMemory(val, signer)
 
 	var exeOptions []execution.ExecutionOption
 	if conf.Execution != nil {
@@ -84,8 +83,11 @@ func (conf *BurrowConfig) Kernel(ctx context.Context, restoreDump string) (*core
 		}
 	}
 
-	return core.NewKernel(ctx, keyClient, privValidator, conf.GenesisDoc, conf.Tendermint.TendermintConfig(), conf.RPC,
-		conf.Keys, keyStore, exeOptions, conf.Tendermint.DefaultAuthorizedPeersProvider(), restoreDump, logger)
+	privValidator := tendermint.NewPrivValidatorMemory(val, signer)
+
+	return core.NewKernel(ctx, keyClient, conf.Keys, keyStore, conf.Tendermint.Offline,
+		privValidator, conf.Tendermint.TendermintConfig(), conf.Tendermint.DefaultAuthorizedPeersProvider(),
+		conf.GenesisDoc, conf.RPC, exeOptions, restoreDump, logger)
 }
 
 func (conf *BurrowConfig) JSONString() string {

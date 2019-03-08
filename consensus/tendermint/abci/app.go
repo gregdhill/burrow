@@ -62,8 +62,8 @@ func NewApp(nodeInfo string, blockchain *bcm.Blockchain, validators Validators, 
 		validators:              validators,
 		checker:                 checker,
 		committer:               committer,
-		checkTx:                 txExecutor("CheckTx", checker, txDecoder, logger.WithScope("CheckTx")),
-		deliverTx:               txExecutor("DeliverTx", committer, txDecoder, logger.WithScope("DeliverTx")),
+		checkTx:                 TxExecutor("CheckTx", checker, txDecoder, logger.WithScope("CheckTx")),
+		deliverTx:               TxExecutor("DeliverTx", committer, txDecoder, logger.WithScope("DeliverTx")),
 		authorizedPeersProvider: authorizedPeersProvider,
 		panicFunc:               panicFunc,
 		logger:                  logger.WithScope("abci.NewApp").With(structure.ComponentKey, "ABCI_App", "node_info", nodeInfo),
@@ -209,7 +209,7 @@ func (app *App) DeliverTx(txBytes []byte) abciTypes.ResponseDeliverTx {
 	}
 }
 
-func txExecutor(name string, executor execution.BatchExecutor, txDecoder txs.Decoder,
+func TxExecutor(name string, executor execution.BatchExecutor, txDecoder txs.Decoder,
 	logger *logging.Logger) func(txBytes []byte) abciTypes.ResponseCheckTx {
 	logf := func(format string, args ...interface{}) string {
 		return fmt.Sprintf("%s: "+format, append([]interface{}{name}, args...)...)
