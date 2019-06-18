@@ -1,0 +1,119 @@
+{
+	"key": "f3502c9069ae9869ec522687",
+	"addrs": [
+		{
+			"addr": {
+				"id": "dc7815fcc1ec75db9977bff0411ad51b9a632616",
+				"ip": "10.63.253.132",
+				"port": 26656
+			},
+			"src": {
+				"id": "",
+				"ip": "0.0.0.0",
+				"port": 26656
+			},
+			"attempts": 7,
+			"last_attempt": "2019-06-16T18:41:54.701183739Z",
+			"last_success": "0001-01-01T00:00:00Z",
+			"bucket_type": 1,
+			"buckets": [
+				52
+			]
+		},
+		{
+			"addr": {
+				"id": "d9aa7bc007f2a7f3f6ef80b5b22d91f912ba7f61",
+				"ip": "10.63.240.164",
+				"port": 26656
+			},
+			"src": {
+				"id": "",
+				"ip": "0.0.0.0",
+				"port": 26656
+			},
+			"attempts": 7,
+			"last_attempt": "2019-06-16T18:41:54.70119791Z",
+			"last_success": "0001-01-01T00:00:00Z",
+			"bucket_type": 1,
+			"buckets": [
+				59
+			]
+		},
+		{
+			"addr": {
+				"id": "e9f27980bc40a9971e9ccfaf807087fb01300f00",
+				"ip": "10.63.251.74",
+				"port": 26656
+			},
+			"src": {
+				"id": "",
+				"ip": "0.0.0.0",
+				"port": 26656
+			},
+			"attempts": 5,
+			"last_attempt": "2019-06-16T18:43:54.701349893Z",
+			"last_success": "0001-01-01T00:00:00Z",
+			"bucket_type": 1,
+			"buckets": [
+				129
+			]
+		},
+		{
+			"addr": {
+				"id": "8378cfb1d639c177a44173de6afb4c5d4d493585",
+				"ip": "10.63.248.206",
+				"port": 26656
+			},
+			"src": {
+				"id": "",
+				"ip": "0.0.0.0",
+				"port": 26656
+			},
+			"attempts": 11,
+			"last_attempt": "2019-06-16T19:11:24.70117344Z",
+			"last_success": "0001-01-01T00:00:00Z",
+			"bucket_type": 1,
+			"buckets": [
+				101
+			]
+		},
+		{
+			"addr": {
+				"id": "a0da17bbaf054d08d205c12ad8a0cda627dc7703",
+				"ip": "10.63.252.23",
+				"port": 26656
+			},
+			"src": {
+				"id": "",
+				"ip": "0.0.0.0",
+				"port": 26656
+			},
+			"attempts": 18,
+			"last_attempt": "2019-06-17T04:45:54.734500466Z",
+			"last_success": "0001-01-01T00:00:00Z",
+			"bucket_type": 1,
+			"buckets": [
+				2
+			]
+		},
+		{
+			"addr": {
+				"id": "5d5447bb8c6a4b9904e15268fcca9e146da17a2f",
+				"ip": "10.63.246.44",
+				"port": 26656
+			},
+			"src": {
+				"id": "",
+				"ip": "0.0.0.0",
+				"port": 26656
+			},
+			"attempts": 9,
+			"last_attempt": "2019-06-17T12:44:23.7019773Z",
+			"last_success": "0001-01-01T00:00:00Z",
+			"bucket_type": 1,
+			"buckets": [
+				125
+			]
+		}
+	]
+}

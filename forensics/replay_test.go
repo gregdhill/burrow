@@ -3,48 +3,66 @@
 package forensics
 
 import (
+
+	"context"
 	"encoding/hex"
 	"fmt"
-	"path"
+	"io/ioutil"
 	"testing"
 
-	"github.com/magiconair/properties/assert"
-
+	"github.com/hyperledger/burrow/integration/rpctest"
+	"github.com/hyperledger/burrow/rpc/rpcevents"
+	"github.com/stretchr/testify/assert"
 	"github.com/hyperledger/burrow/config/source"
 	"github.com/hyperledger/burrow/execution/state"
 	"github.com/hyperledger/burrow/genesis"
 	"github.com/hyperledger/burrow/logging"
 	"github.com/stretchr/testify/require"
+	"github.com/sergi/go-diff/diffmatchpatch"
+	
 )
 
 // This serves as a testbed for looking at non-deterministic burrow instances capture from the wild
 // Put the path to 'good' and 'bad' burrow directories here (containing the config files and .burrow dir)
 //const goodDir = "/home/silas/test-chain"
-const goodDir = "/home/silas/burrows/production-t9/burrow-t9-studio-001-good"
-const badDir = "/home/silas/burrows/production-t9/burrow-t9-studio-000-bad"
-const criticalBlock uint64 = 6
+const badDir = "/home/greg/go/src/github.com/hyperledger/burrow/.state001"
+const goodDir = "/home/greg/go/src/github.com/hyperledger/burrow/.state002"
+const genFile = "/home/greg/go/src/github.com/hyperledger/burrow/t9-gen.json"
+const criticalBlock uint64 = 52
 
 func TestReplay_Compare(t *testing.T) {
 	badReplay := newReplay(t, badDir)
 	goodReplay := newReplay(t, goodDir)
-	badRecaps, err := badReplay.Blocks(1, criticalBlock+1)
+	badRecaps, err := badReplay.Blocks(2, criticalBlock+1)
 	require.NoError(t, err)
-	goodRecaps, err := goodReplay.Blocks(1, criticalBlock+1)
+	goodRecaps, err := goodReplay.Blocks(2, criticalBlock+1)
 	require.NoError(t, err)
-	//for i, goodRecap := range goodRecaps {
-	//	fmt.Printf("Good: %v\n", goodRecap)
-	//	fmt.Printf("Bad: %v\n", badRecaps[i])
-	//	assert.Equal(t, goodRecap, badRecaps[i])
-	//	for i, txe := range goodRecap.TxExecutions {
-	//		fmt.Printf("Tx %d: %v\n", i, txe.TxHash)
-	//		fmt.Println(txe.Envelope)
-	//	}
-	//	fmt.Println()
-	//}
+	for i, goodRecap := range goodRecaps {
+		fmt.Printf("Good: %v\n", goodRecap)
+		fmt.Printf("Bad: %v\n", badRecaps[i])
+		assert.Equal(t, goodRecap, badRecaps[i])
+		for i, txe := range goodRecap.TxExecutions {
+			fmt.Printf("Tx %d: %v\n", i, txe.TxHash)
+			fmt.Println(txe.Envelope)
+		}
+		fmt.Println()
+	}
 
 	txe := goodRecaps[5].TxExecutions[0]
 	assert.Equal(t, badRecaps[5].TxExecutions[0], txe)
-	fmt.Printf("%v\n", txe.Envelope.Signatories[0])
+	fmt.Printf("%v \n\n", txe)
+
+	cli := rpctest.NewExecutionEventsClient(t, "localhost:10997")
+	txeRemote, err := cli.Tx(context.Background(), &rpcevents.TxRequest{
+		TxHash: txe.TxHash,
+	})
+	require.NoError(t, err)
+	err = ioutil.WriteFile("txe.json", []byte(source.JSONString(txe)), 0600)
+	require.NoError(t, err)
+	err = ioutil.WriteFile("txeRemote.json", []byte(source.JSONString(txeRemote)), 0600)
+	require.NoError(t, err)
+
+	fmt.Println(txeRemote)
 }
 
 func TestDecipher(t *testing.T) {
@@ -56,20 +74,14 @@ func TestDecipher(t *testing.T) {
 
 func TestReplay_Good(t *testing.T) {
 	replay := newReplay(t, goodDir)
-	recaps, err := replay.Blocks(2, criticalBlock+1)
+	_, err := replay.Blocks(1, criticalBlock+1)
 	require.NoError(t, err)
-	for _, recap := range recaps {
-		fmt.Println(recap.String())
-	}
 }
 
 func TestReplay_Bad(t *testing.T) {
 	replay := newReplay(t, badDir)
-	recaps, err := replay.Blocks(1, criticalBlock+1)
+	_, err := replay.Blocks(1, criticalBlock+1)
 	require.NoError(t, err)
-	for _, recap := range recaps {
-		fmt.Println(recap.String())
-	}
 }
 
 func TestStateHashes_Bad(t *testing.T) {
@@ -96,21 +108,33 @@ func TestReplay_Bad_Block(t *testing.T) {
 	replayBlock(t, badDir, criticalBlock)
 }
 
-func TestCriticalBlock(t *testing.T) {
+func TestCriticalBlock_CommitTree(t *testing.T) {
+	// go test ./forensics -tags=forensics -v -run TestCriticalBlock_CommitTree
+
 	badState := getState(t, badDir, criticalBlock)
 	goodState := getState(t, goodDir, criticalBlock)
-	require.Equal(t, goodState.Hash(), badState.Hash())
-	fmt.Printf("good: %X, bad: %X\n", goodState.Hash(), badState.Hash())
-	_, _, err := badState.Update(func(up state.Updatable) error {
-		return nil
-	})
-	require.NoError(t, err)
-	_, _, err = goodState.Update(func(up state.Updatable) error {
-		return nil
-	})
-	require.NoError(t, err)
 
-	fmt.Printf("good: %X, bad: %X\n", goodState.Hash(), badState.Hash())
+	badCommitTree := badState.DumpCommits()
+	goodCommitTree := goodState.DumpCommits()
+
+	if badCommitTree != goodCommitTree {
+		dmp := diffmatchpatch.New()
+		diffs := dmp.DiffMain(badCommitTree, goodCommitTree, true)
+		fmt.Println(dmp.DiffPrettyText(diffs))
+		assert.Fail(t, "commits trees do not match")
+	}
+}
+
+func TestReplay_BadCommits(t *testing.T) {
+	// go test ./forensics -tags=forensics -v -run TestReplay_BadCommits
+
+	fmt.Println("Good >")
+	replay := newReplay(t, goodDir)
+	replay.Blocks(1, criticalBlock+1)
+
+	fmt.Println("Bad >")
+	replay = newReplay(t, badDir)
+	replay.Blocks(1, criticalBlock+1)
 }
 
 func replayBlock(t *testing.T, burrowDir string, height uint64) {
@@ -130,7 +154,7 @@ func getState(t *testing.T, burrowDir string, height uint64) *state.State {
 
 func newReplay(t *testing.T, burrowDir string) *Replay {
 	genesisDoc := new(genesis.GenesisDoc)
-	err := source.FromFile(path.Join(burrowDir, "genesis.json"), genesisDoc)
+	err := source.FromFile(genFile, genesisDoc)
 	require.NoError(t, err)
-	return NewReplay(path.Join(burrowDir, ".burrow"), genesisDoc, logging.NewNoopLogger())
+	return NewReplay(burrowDir, genesisDoc, logging.NewNoopLogger())
 }

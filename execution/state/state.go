@@ -305,3 +305,7 @@ func (s *State) SetLogger(logger *logging.Logger) {
 func (s *State) Dump() string {
 	return s.writeState.forest.Dump()
 }
+
+func (s *State) DumpCommits() string {
+	return s.writeState.forest.DumpCommits()
+}

@@ -136,31 +136,23 @@ func (re *Replay) Block(height uint64) (*ReplayCapture, error) {
 func (re *Replay) Blocks(startHeight, endHeight uint64) ([]*ReplayCapture, error) {
 	var err error
 	var st *state.State
+
 	if startHeight > 1 {
 		// Load and commit previous block
 		block, err := re.explorer.Block(int64(startHeight - 1))
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "explorer.Block()")
 		}
 		err = re.blockchain.CommitBlockAtHeight(block.Time, block.Hash(), block.Header.AppHash, uint64(block.Height))
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "blockchain.CommitBlockAtHeight()")
 		}
-		// block.AppHash is hash after txs from previous block have been applied - it's the state we want to load on top
-		// of which we will reapply this block txs
-		st, err = re.State(startHeight - 1)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		st, err = state.MakeGenesisState(re.cacheDB, re.genesisDoc)
-		if err != nil {
-			return nil, err
-		}
-		err = st.InitialCommit()
-		if err != nil {
-			return nil, err
-		}
+	}
+	// block.AppHash is hash after txs from previous block have been applied - it's the state we want to load on
+	// top of which we will reapply this block txs
+	st, err = re.State(startHeight - 1)
+	if err != nil {
+		return nil, errors.Wrap(err, "State()")
 	}
 	// Get our commit machinery
 	committer := execution.NewBatchCommitter(st, execution.ParamsFromGenesis(re.genesisDoc), re.blockchain,
@@ -182,8 +174,8 @@ func (re *Replay) Blocks(startHeight, endHeight uint64) ([]*ReplayCapture, error
 
 		}
 		if height > 1 && !bytes.Equal(st.Hash(), block.AppHash) {
-			return nil, fmt.Errorf("state hash (%X) retrieved for block AppHash (%X) do not match",
-				st.Hash(), block.AppHash[:])
+			return nil, errors.Errorf("state hash %X does not match AppHash %X at height %d",
+				st.Hash(), block.AppHash[:], height)
 		}
 		recap.AppHashBefore = binary.HexBytes(block.AppHash)
 
@@ -199,9 +191,6 @@ func (re *Replay) Blocks(startHeight, endHeight uint64) ([]*ReplayCapture, error
 		})
 		if err != nil {
 			return nil, errors.Wrap(err, "block.Transactions()")
-		}
-		if execErr != nil {
-			return nil, errors.Wrap(execErr, "committer.Execute()")
 		}
 		abciHeader := types.TM2PB.Header(&block.Header)
 		recap.AppHashAfter, err = committer.Commit(&abciHeader)

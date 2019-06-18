@@ -127,3 +127,9 @@ func (imf *ImmutableForest) Dump() string {
 	})
 	return dump.String()
 }
+
+func (imf *ImmutableForest) DumpCommits() string {
+	dump := treeprint.New()
+	AddTreePrintTree("Commits", dump, imf.commitsTree)
+	return dump.String()
+}

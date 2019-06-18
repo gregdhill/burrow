@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/hex"
 	"fmt"
 
 	"github.com/tendermint/iavl"
@@ -64,7 +65,18 @@ func (rwt *RWTree) Save() ([]byte, int64, error) {
 
 func (rwt *RWTree) Set(key, value []byte) bool {
 	rwt.updated = true
-	return rwt.tree.Set(key, value)
+	res := rwt.tree.Set(key, value)
+
+	// exp := "739f1f11bed405195bdb51d92cf095717a82dea8e6"
+	exp := "73ceea7795a4203e49bebced309b1c60ee7c13929e"
+	if hex.EncodeToString(key) == exp {
+		fmt.Println("Key:", exp)
+		fmt.Println("ValueIn:", hex.EncodeToString(value))
+		fmt.Println("ValueOut:", hex.EncodeToString(rwt.tree.Get(key)))
+		fmt.Println()
+	}
+
+	return res
 }
 
 func (rwt *RWTree) Delete(key []byte) ([]byte, bool) {
@@ -97,7 +109,7 @@ func (rwt *RWTree) Dump() string {
 func AddTreePrintTree(edge string, tree treeprint.Tree, rwt KVCallbackIterableReader) {
 	tree = tree.AddBranch(fmt.Sprintf("%q", edge))
 	rwt.Iterate(nil, nil, true, func(key []byte, value []byte) error {
-		tree.AddNode(fmt.Sprintf("%q -> %q", string(key), string(value)))
+		tree.AddNode(fmt.Sprintf("%q -> %q", hex.EncodeToString(key), hex.EncodeToString(value)))
 		return nil
 	})
 }

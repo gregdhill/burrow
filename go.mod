@@ -42,6 +42,7 @@ require (
 	github.com/prometheus/common v0.0.0-20181126121408-4724e9255275
 	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a
 	github.com/rs/cors v1.6.0 // indirect
+	github.com/sergi/go-diff v1.0.0
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/spf13/viper v1.3.2
 	github.com/streadway/simpleuuid v0.0.0-20130420165545-6617b501e485
