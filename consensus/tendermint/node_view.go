@@ -70,7 +70,7 @@ func (nv *NodeView) Peers() p2p.IPeerSet {
 	return nv.tmNode.Switch().Peers()
 }
 
-func (nv *NodeView) BlockStore() state.BlockStoreRPC {
+func (nv *NodeView) BlockStore() state.BlockStore {
 	return nv.tmNode.BlockStore()
 }
 

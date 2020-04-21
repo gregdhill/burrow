@@ -13,13 +13,13 @@ import (
 
 type BlockStore struct {
 	txDecoder txs.Decoder
-	state.BlockStoreRPC
+	state.BlockStore
 }
 
-func NewBlockStore(blockStore state.BlockStoreRPC) *BlockStore {
+func NewBlockStore(blockStore state.BlockStore) *BlockStore {
 	return &BlockStore{
-		txDecoder:     txs.NewProtobufCodec(),
-		BlockStoreRPC: blockStore,
+		txDecoder:  txs.NewProtobufCodec(),
+		BlockStore: blockStore,
 	}
 }
 
